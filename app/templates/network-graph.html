@@ -126,23 +126,19 @@ d3.json(graphDataPath).then(function(graph) {
         //.attr("target", '_blank')
         //.attr("xlink:href",  function(d) { return (window.location.href + '?device=' + d.id) }); // link for node details
 
-    const tooltip = d3.select("body")
-        .append("div")
-        .attr("class", "popover")
-        .style("opacity", 0);
+    //const tooltip = d3.select("body")
+    //    .append("div")
+    //    .attr("class", "popover")
+    //    .style("opacity", 0);
 
-    // keep track of clicked nodes
-    let nodeClicked = false;
-    let nodeClickedObj = '';
+    //nodes.on("click", function(d,i){
+    //  d3.event.preventDefault();
+    //  d3.event.stopPropagation();
+    //  //d3.OnClickDetails(d.id);
+    //  }
+    //);
 
-    nodes.on("click", function(d,i){
-      d3.event.preventDefault();
-      d3.event.stopPropagation();
-      //d3.OnClickDetails(d.id);
-      }
-    );
-
-    nodes.call(d3.drag() // leaving ability to drag nodess out for now
+    nodes.call(d3.drag() // ability to drag elements
            .on("start", dragstarted)
            .on("drag", dragged)
            .on("end", dragended));
@@ -161,7 +157,7 @@ d3.json(graphDataPath).then(function(graph) {
     //    .attr("text-anchor", "middle")
     //    .attr("font-family", "sans-serif")
     //    .attr("font-size", 10)
-    //    .text("Simulating. One moment please…");
+    //    .text("Simulating. One moment please…");ƒ
 
     simulation
         .nodes(graph.nodes)
@@ -172,7 +168,6 @@ d3.json(graphDataPath).then(function(graph) {
       .links(graph.links);
 
     d3.timeout(function() { // synchronize animation with page load
-        //loading.remove();
         // not sure exactly how this works, needs research
         for (let i = 0, n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())); i < n; ++i) {
             simulation.tick();
@@ -236,26 +231,9 @@ d3.json(graphDataPath).then(function(graph) {
             .text(function(d) { return d.id });
     }
 
-    function update() {
-        //nodes
-        //    .data(graph.nodes.slice(0,300));
-        //nodes
-        //    .enter().append("g");
-        nodes
-            .data([])
-            .exit()
-            .remove();
-
-        // restart simulation
-        //simulation
-            //.alphaTarget(.7)
-          //  .restart();
-    }
-
     function updateGraphWithPlaylists() {
        // let selectedPlaylists = $('#playlistSelect').val();
-       // let selectedPlaylists = ['Scores'];
-        let selectedPlaylists = ['Scores', 'Trance']
+        let selectedPlaylists = ['Scores', 'Trance'];
         let nodesToKeep = [];
         let linksToKeep = [];
         graph.nodes.forEach(function(entry) {
@@ -265,50 +243,32 @@ d3.json(graphDataPath).then(function(graph) {
             }
             else if (entry.nodeType === 'track') {
                 // check if selected playlists are in playlists in node
-                let pcnt = 0;
-                entry.playlists.forEach(function(p) {
-                    if (selectedPlaylists.indexOf(p) > -1) {
-                        pcnt += 1;
+                for (let i=0; i < entry.playlists.length; i++) {
+                    if (selectedPlaylists.indexOf(entry.playlists[i]) > -1) {
+                        nodesToKeep.push(entry);
+                        break
                     }
-
-                });
-
-                if (pcnt === entry.playlists.length) {
-                    nodesToKeep.push(entry)
                 }
             }
         });
         graph.links.forEach(function(entry) {
-            // if entry's target is not found in playlists selected
+            // if entry's target is found in playlists selected
             if (selectedPlaylists.indexOf(entry.target.id) > -1) {
                 linksToKeep.push(entry)
             }
         })
 
-
         console.log(nodesToKeep, 'nodes')
         console.log(linksToKeep, 'links')
 
-
-        //nodes.exit()
-        //    .remove();
-
-        //nodes = g.append("g")
-        //    .attr("class", "nodes")
-        //    .selectAll("g")
-        //    .data(graph.nodes, function(d) {return d.id}) // get json data
-        //    //.enter().append("g"); // enter represents elements to be added, add them to the DOM
-        //    .exit().remove()
-
-        //console.log(nodesToRemove)
-
         nodes = nodes.data(nodesToKeep, function(d){return d.id});
         nodes.exit().remove();
+
         nodes = nodes
             .enter()
             .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
             .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
-            .merge(nodes);
+            .merge(nodes)
 
        links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
        links.exit().remove();
@@ -319,16 +279,6 @@ d3.json(graphDataPath).then(function(graph) {
            .attr("stroke", "#00b8ff")
            .attr("stroke-width", 2);
 
-        //nodes
-        //    .data(nodesToRemove)
-        //    .exit()
-        //    .remove();
-
-        //links
-        //    .data(linksToRemove)
-        //    .exit()
-        //    .remove()
-
         simulation.nodes(nodes);
         simulation.force("nodeLink").links(links);
         simulation.alpha(.7).restart();
@@ -336,8 +286,6 @@ d3.json(graphDataPath).then(function(graph) {
     }
 
     updateGraphWithPlaylists()
-
-    //update()
 
 });
 
