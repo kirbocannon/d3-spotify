@@ -96,7 +96,7 @@ let nodes = g.append("g")
 
 const simulation = d3.forceSimulation()
     .force("nodeLink", d3.forceLink().id(function(d) { return d.id; }).distance(1).strength(.01)) // set link strength and distance
-    .force("charge", d3.forceManyBody().strength(-500).distanceMax(100).distanceMin(50)) // spread nodes apart by modifying gravity aka attraction
+    .force("charge", d3.forceManyBody().strength(-500).distanceMax(100).distanceMin(100)) // spread nodes apart by modifying gravity aka attraction
     .force("x", d3.forceX(width/2)) // forces attraction towards specified point
     .force("center", d3.forceCenter((width*1.1)/2, height/2))
     .force("collision", d3.forceCollide().radius(.2)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
@@ -105,7 +105,7 @@ d3.json(graphDataPath).then(function(g) {
 
     graph = g;
     startGraph()
-    //updateGraphWithPlaylists()
+    updateGraphWithPlaylists()
 
 });
 
@@ -209,7 +209,7 @@ function drawText() {
 
 function updateGraphWithPlaylists() {
    // let selectedPlaylists = $('#playlistSelect').val();
-    let selectedPlaylists = ['Scores', 'Trance'];
+    let selectedPlaylists = ['Scores', "Trance"];
     let nodesToKeep = [];
     let linksToKeep = [];
     graph.nodes.forEach(function(entry) {
@@ -240,15 +240,15 @@ function updateGraphWithPlaylists() {
     nodes = nodes.data(nodesToKeep, function(d){return d.id});
     nodes.exit().remove();
 
-    nodes = nodes
-        .enter().append("circle")
-        .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
-        .call(d3.drag()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended))
-        .merge(nodes);
+    //nodes = nodes
+    //    .enter().append("g")
+    //    .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
+    //    .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
+    //    .call(d3.drag()
+    //        .on("start", dragstarted)
+    //        .on("drag", dragged)
+    //        .on("end", dragended))
+    //    .merge(nodes);
 
    links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
    links.exit().remove();
@@ -259,9 +259,9 @@ function updateGraphWithPlaylists() {
        .attr("stroke", "#00b8ff")
        .attr("stroke-width", 2);
 
-    simulation.nodes(nodes);
+    //simulation.nodes(nodes);
     simulation.force("nodeLink").links(links);
-    simulation.alpha(.7).restart();
+    simulation.alpha(.5).restart();
 }
 
 
