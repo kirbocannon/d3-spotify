@@ -8,4 +8,4 @@ archive/
 *.log
 lab_files/
 credentials.yaml
-app/static/*
+app/static/data/*
