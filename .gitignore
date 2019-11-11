@@ -1,0 +1,11 @@
+**.pyc
+**.DS_Store
+**.DS_Store/
+.idea/
+venv/
+archive/
+*.bak*
+*.log
+lab_files/
+credentials.yaml
+app/static/*
