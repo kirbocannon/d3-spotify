@@ -72,6 +72,7 @@
 
 <script>
 
+let graph = {}
 const graphDataPath = "/data/output.json";
 const nodeImageSize = 45;
 const svg = d3.select("svg");
@@ -83,62 +84,45 @@ const nodeGroupMap = {
     'playlist': {'color': "#7f7f7f", 'group': 1},
     'track': {'color': "#ff7f0e", 'group': 5}
 };
+//add encompassing group for the zoom
+const g = svg.append("g")
+    .attr("class", "everything");
 
-d3.json(graphDataPath).then(function(graph) {
+let links = g.append("g")
+    .selectAll("line")
 
-    const simulation = d3.forceSimulation()
+let nodes = g.append("g")
+    .selectAll("g")
+
+const simulation = d3.forceSimulation()
     .force("nodeLink", d3.forceLink().id(function(d) { return d.id; }).distance(1).strength(.01)) // set link strength and distance
     .force("charge", d3.forceManyBody().strength(-500).distanceMax(100).distanceMin(50)) // spread nodes apart by modifying gravity aka attraction
-    //.force("y", d3.forceY(height*0.7)/4) // determine y-axis hierarchy by group
-//        if(d.group === "1"){
-//            return (height*0.7)/4
-//       } else if (d.group === "2"){
-//            return 2*(height*0.7)/4
-//        } else if (d.group === "3"){
-//            return 3*(height*0.7)/4
-//        } else {
-//            return 0
-//        }
-//     }).strength(1)) // y-axis link strength
     .force("x", d3.forceX(width/2)) // forces attraction towards specified point
     .force("center", d3.forceCenter((width*1.1)/2, height/2))
     .force("collision", d3.forceCollide().radius(.2)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
 
-    //add encompassing group for the zoom
-    const g = svg.append("g")
-        .attr("class", "everything");
+d3.json(graphDataPath).then(function(g) {
 
-    let links = g.append("g")
-        .selectAll("line")
+    graph = g;
+    startGraph()
+    //updateGraphWithPlaylists()
+
+});
+
+function startGraph() {
+
+    links = links
         .data(graph.links) // get json data
         .enter().append("line") // apply data and add line to DOM
         .attr("stroke", "#00b8ff")
-        //.attr("stroke-width", function(d) { return (Math.sqrt(d.value)) + 2; });
-        //.attr("stroke", function(d) { return color(parseInt(d.value)); }) // color of links based on group
-        //.attr("stroke-width", function(d) { return Math.sqrt(parseInt(d.value)); }); // width of lines based on group value by sqauring the value
         .attr("stroke-width", 2)
 
-    let nodes = g.append("g")
+    nodes = nodes
         .attr("class", "nodes")
-        .selectAll("g")
         .data(graph.nodes) // get json data
         .enter().append("g"); // enter represents elements to be added, add them to the DOM
-        //.attr("target", '_blank')
-        //.attr("xlink:href",  function(d) { return (window.location.href + '?device=' + d.id) }); // link for node details
 
-    //const tooltip = d3.select("body")
-    //    .append("div")
-    //    .attr("class", "popover")
-    //    .style("opacity", 0);
-
-    //nodes.on("click", function(d,i){
-    //  d3.event.preventDefault();
-    //  d3.event.stopPropagation();
-    //  //d3.OnClickDetails(d.id);
-    //  }
-    //);
-
-    nodes.call(d3.drag() // ability to drag elements
+    nodes = nodes.call(d3.drag() // ability to drag elements
            .on("start", dragstarted)
            .on("drag", dragged)
            .on("end", dragended));
@@ -148,16 +132,6 @@ d3.json(graphDataPath).then(function(graph) {
         .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
 
     drawText();
-
-    // node.append("title")
-    //     .text(function(d) { return d.id; });
-
-    //const loading = svg.append("text")
-    //    .attr("dy", "0.35em")
-    //    .attr("text-anchor", "middle")
-    //    .attr("font-family", "sans-serif")
-    //    .attr("font-size", 10)
-    //    .text("Simulating. One moment please…");ƒ
 
     simulation
         .nodes(graph.nodes)
@@ -177,34 +151,6 @@ d3.json(graphDataPath).then(function(graph) {
     // invoke timer callbacks, avoid flicker
     d3.timerFlush();
 
-    function ticked() { // as simulation advances, .on tick called will display the results as computations process a 'tick'
-        links
-            .attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
-
-        nodes
-            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"});
-    }
-
-    function dragstarted(d) {
-       if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-       d.fx = d.x;
-       d.fy = d.y;
-     }
-
-    function dragged(d) {
-       d.fx = d3.event.x;
-       d.fy = d3.event.y;
-     }
-
-    function dragended(d) {
-       if (!d3.event.active) simulation.alphaTarget(0);
-       d.fx = null;
-       d.fy = null;
-     }
-
     // PAN/ZOOM FUNCTIONALITY
     const zoom_handler = d3.zoom()
         .on("zoom", zoom_actions);
@@ -214,98 +160,110 @@ d3.json(graphDataPath).then(function(graph) {
     // disable double-click to zoom
     svg.on("dblclick.zoom", null);
 
-    // pan/zoom functions
-    function zoom_actions() {
-        g.attr("transform", d3.event.transform)
-    }
+}
 
-    function drawText() {
-        nodes.append("text")
-            //.attr("font-size", function(d){return `${2 / nodeGroupMap[d.nodeType]['group']}em`})
-            .attr("id", function(d){return "label-" + d.id})
-            .attr("font-weight", "Bold")
-            .style('fill', '#95A3B3') // put in logic for a 'healthy' vs 'unhealthy' node
-            .attr("dx", -30)
-            .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType]['group']}em`})
-            .attr("x", +10)
-            .text(function(d) { return d.id });
-    }
+function ticked() { // as simulation advances, .on tick called will display the results as computations process a 'tick'
+    links
+        .attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
 
-    function updateGraphWithPlaylists() {
-       // let selectedPlaylists = $('#playlistSelect').val();
-        let selectedPlaylists = ['Scores', 'Trance'];
-        let nodesToKeep = [];
-        let linksToKeep = [];
-        graph.nodes.forEach(function(entry) {
-            // if select playlists equal node id
-            if (entry.nodeType === 'playlist' && selectedPlaylists.indexOf(entry.id) > -1) {
-                nodesToKeep.push(entry);
-            }
-            else if (entry.nodeType === 'track') {
-                // check if selected playlists are in playlists in node
-                for (let i=0; i < entry.playlists.length; i++) {
-                    if (selectedPlaylists.indexOf(entry.playlists[i]) > -1) {
-                        nodesToKeep.push(entry);
-                        break
-                    }
+    nodes
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"});
+}
+
+function dragstarted(d) {
+   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+   d.fx = d.x;
+   d.fy = d.y;
+ }
+
+function dragged(d) {
+   d.fx = d3.event.x;
+   d.fy = d3.event.y;
+ }
+
+function dragended(d) {
+   if (!d3.event.active) simulation.alphaTarget(0);
+   d.fx = null;
+   d.fy = null;
+ }
+
+// pan/zoom functions
+function zoom_actions() {
+    g.attr("transform", d3.event.transform)
+}
+
+function drawText() {
+    nodes.append("text")
+        //.attr("font-size", function(d){return `${2 / nodeGroupMap[d.nodeType]['group']}em`})
+        .attr("id", function(d){return "label-" + d.id})
+        .attr("font-weight", "Bold")
+        .style('fill', '#95A3B3') // put in logic for a 'healthy' vs 'unhealthy' node
+        .attr("dx", -30)
+        .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType]['group']}em`})
+        .attr("x", +10)
+        .text(function(d) { return d.id });
+}
+
+function updateGraphWithPlaylists() {
+   // let selectedPlaylists = $('#playlistSelect').val();
+    let selectedPlaylists = ['Scores', 'Trance'];
+    let nodesToKeep = [];
+    let linksToKeep = [];
+    graph.nodes.forEach(function(entry) {
+        // if select playlists equal node id
+        if (entry.nodeType === 'playlist' && selectedPlaylists.indexOf(entry.id) > -1) {
+            nodesToKeep.push(entry);
+        }
+        else if (entry.nodeType === 'track') {
+            // check if selected playlists are in playlists in node
+            for (let i=0; i < entry.playlists.length; i++) {
+                if (selectedPlaylists.indexOf(entry.playlists[i]) > -1) {
+                    nodesToKeep.push(entry);
+                    break
                 }
             }
-        });
-        graph.links.forEach(function(entry) {
-            // if entry's target is found in playlists selected
-            if (selectedPlaylists.indexOf(entry.target.id) > -1) {
-                linksToKeep.push(entry)
-            }
-        })
+        }
+    });
+    graph.links.forEach(function(entry) {
+        // if entry's target is found in playlists selected
+        if (selectedPlaylists.indexOf(entry.target.id) > -1) {
+            linksToKeep.push(entry)
+        }
+    })
 
-        console.log(nodesToKeep, 'nodes')
-        console.log(linksToKeep, 'links')
+    console.log(nodesToKeep, 'nodes')
+    console.log(linksToKeep, 'links')
 
-        nodes = nodes.data(nodesToKeep, function(d){return d.id});
-        nodes.exit().remove();
+    nodes = nodes.data(nodesToKeep, function(d){return d.id});
+    nodes.exit().remove();
 
-        nodes = nodes
-            .enter()
-            .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-            .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
-            .merge(nodes)
+    nodes = nodes
+        .enter().append("circle")
+        .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
+        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended))
+        .merge(nodes);
 
-       links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
-       links.exit().remove();
-       links = links
-           .enter()
-           .append("line")
-           .merge(links)
-           .attr("stroke", "#00b8ff")
-           .attr("stroke-width", 2);
+   links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
+   links.exit().remove();
+   links = links
+       .enter()
+       .append("line")
+       .merge(links)
+       .attr("stroke", "#00b8ff")
+       .attr("stroke-width", 2);
 
-        simulation.nodes(nodes);
-        simulation.force("nodeLink").links(links);
-        simulation.alpha(.7).restart();
+    simulation.nodes(nodes);
+    simulation.force("nodeLink").links(links);
+    simulation.alpha(.7).restart();
+}
 
-    }
-
-    updateGraphWithPlaylists()
-
-});
-
-/*
-$(".pop").popover({ trigger: "manual" , html: true, animation:false})
-    .on("mouseenter", function () {
-        let _this = this;
-        $(this).popover("show");
-        $(".popover").on("mouseleave", function () {
-            $(_this).popover('hide');
-        });
-    }).on("mouseleave", function () {
-        let _this = this;
-        setTimeout(function () {
-            if (!$(".popover:hover").length) {
-                $(_this).popover("hide");
-            }
-        }, 300);
-
-});*/
 
 $(document).ready(function() {
     const $playlistSelect = $('#playlistSelect').select2({
