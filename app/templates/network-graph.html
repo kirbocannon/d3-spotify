@@ -95,31 +95,34 @@ let nodes = g.append("g")
     .selectAll("g")
 
 const simulation = d3.forceSimulation()
-    .force("nodeLink", d3.forceLink().id(function(d) { return d.id; }).distance(1).strength(.01)) // set link strength and distance
-    .force("charge", d3.forceManyBody().strength(-500).distanceMax(100).distanceMin(100)) // spread nodes apart by modifying gravity aka attraction
-    .force("x", d3.forceX(width/2)) // forces attraction towards specified point
-    .force("center", d3.forceCenter((width*1.1)/2, height/2))
-    .force("collision", d3.forceCollide().radius(.2)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
+    //.force("nodeLink", d3.forceLink().id(function(d) { return d.id; }).distance(.01).strength(.001)) // set link strength and distance
+    //.force("charge", d3.forceManyBody().strength(-500).distanceMax(20).distanceMin(10)) // spread nodes apart by modifying gravity aka attraction
+    //.force("x", d3.forceX(width/10)) // forces attraction towards specified point
+    //.force("center", d3.forceCenter((width*1.1)/2, height/2))
+    //.force("collision", d3.forceCollide().radius(.1)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
+
 
 d3.json(graphDataPath).then(function(g) {
 
     graph = g;
-    startGraph()
-    updateGraphWithPlaylists()
+    startGraph();
 
 });
 
 function startGraph() {
 
     links = links
-        .data(graph.links) // get json data
+        .attr("class", "link")
+        //.data(graph.links) // get json data
+        .data([]) // get json data
         .enter().append("line") // apply data and add line to DOM
         .attr("stroke", "#00b8ff")
         .attr("stroke-width", 2)
 
     nodes = nodes
-        .attr("class", "nodes")
-        .data(graph.nodes) // get json data
+        .attr("class", "node")
+        //.data(graph.nodes) // get json data
+        .data([]) // get json data
         .enter().append("g"); // enter represents elements to be added, add them to the DOM
 
     nodes = nodes.call(d3.drag() // ability to drag elements
@@ -138,6 +141,17 @@ function startGraph() {
         });
 
     drawText();
+
+    simulation
+        //.force("nodeLink", d3.forceLink(links).id(d => d.id))
+      //.force("charge", d3.forceManyBody())
+      .force("center", d3.forceCenter(width / 2, height / 2))
+
+        .force("nodeLink", d3.forceLink().id(function(d) { return d.id; }).distance(.01).strength(.001)) // set link strength and distance
+    .force("charge", d3.forceManyBody().strength(-500).distanceMax(20).distanceMin(10)) // spread nodes apart by modifying gravity aka attraction
+       // .force("x", d3.forceX(width/10)) // forces attraction towards specified point
+    //.force("center", d3.forceCenter((width*1.1)/2, height/2))
+    .force("collision", d3.forceCollide().radius(1)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
 
     simulation
         .nodes(graph.nodes)
@@ -214,8 +228,9 @@ function drawText() {
 }
 
 function updateGraphWithPlaylists() {
-   // let selectedPlaylists = $('#playlistSelect').val();
-    let selectedPlaylists = ['Scores', "Trance"];
+    let selectedPlaylists = $('#playlistSelect').val();
+    console.log(selectedPlaylists)
+    //let selectedPlaylists = ['Scores', "Trance"];
     let nodesToKeep = [];
     let linksToKeep = [];
     graph.nodes.forEach(function(entry) {
@@ -246,15 +261,27 @@ function updateGraphWithPlaylists() {
     nodes = nodes.data(nodesToKeep, function(d){return d.id});
     nodes.exit().remove();
 
-    //nodes = nodes
-    //    .enter().append("g")
-    //    .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-    //    .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
-    //    .call(d3.drag()
-    //        .on("start", dragstarted)
-    //        .on("drag", dragged)
-    //        .on("end", dragended))
-    //    .merge(nodes);
+    nodes = nodes
+        .enter().append("g")
+        .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
+        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended))
+        .merge(nodes);
+
+    nodes.append("circle") // add node icons
+        .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
+        .attr("fill", function(d){
+            if (d.nodeType === 'track' && d.playlists.length > 1) {
+                return nodeGroupMap[d.nodeType]['mcolor']
+            } else {
+                return nodeGroupMap[d.nodeType]['color']
+            }
+        });
+
+    drawText();
 
    links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
    links.exit().remove();
@@ -267,7 +294,7 @@ function updateGraphWithPlaylists() {
 
     //simulation.nodes(nodes);
     simulation.force("nodeLink").links(links);
-    simulation.alpha(.5).restart();
+    simulation.alpha(.1).restart();
 }
 
 
@@ -275,7 +302,7 @@ $(document).ready(function() {
     const $playlistSelect = $('#playlistSelect').select2({
         placeholder: "Select Playlists...",
         width: "100%",
-        closeOnSelect: false,
+        closeOnSelect: true,
         allowClear: true,
         tags: true,
         tokenSeparators: [','],
@@ -302,6 +329,10 @@ $(document).ready(function() {
 
     // add custom select2 class
     $playlistSelect.data('select2').$container.addClass("select2-normal")
+
+    $playlistSelect.on("change", function(e) {
+        updateGraphWithPlaylists()
+    });
 });
 
 </script>
