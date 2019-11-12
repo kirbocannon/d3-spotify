@@ -81,8 +81,8 @@ const height = +svg.attr("height");
 const color = d3.scaleOrdinal(d3.schemeCategory10);
 const edgeAlign = -20;
 const nodeGroupMap = {
-    'playlist': {'color': "#7f7f7f", 'group': 1},
-    'track': {'color': "#ff7f0e", 'group': 5}
+    'playlist': {'color': "#7f7f7f", "group": 1},
+    'track': {'color': "#ff7f0e", "mcolor": "#2cff1c", "group": 5}
 };
 //add encompassing group for the zoom
 const g = svg.append("g")
@@ -129,7 +129,13 @@ function startGraph() {
 
     nodes.append("circle") // add node icons
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
+        .attr("fill", function(d){
+            if (d.nodeType === 'track' && d.playlists.length > 1) {
+                return nodeGroupMap[d.nodeType]['mcolor']
+            } else {
+                return nodeGroupMap[d.nodeType]['color']
+            }
+        });
 
     drawText();
 
