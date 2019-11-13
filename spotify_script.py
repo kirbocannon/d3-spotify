@@ -50,7 +50,7 @@ def main():
     all_tracks = []
 
     while True:
-        for playlist in playlists['items'][0:5]:
+        for playlist in playlists['items']:
             graph['nodes'].append({'id': playlist['name'], 'nodeType': 'playlist'})
             track_results = sp.user_playlist(
                 USERNAME, playlist['id'],
