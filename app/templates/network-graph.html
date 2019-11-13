@@ -72,13 +72,14 @@
 
 <script>
 
-let graph = {}
+let graph = {};
 const graphDataPath = "/data/output.json";
 const nodeImageSize = 45;
 const svg = d3.select("svg");
+const linkedByIndex = {};
 const width = +svg.attr("width");
 const height = +svg.attr("height");
-const color = d3.scaleOrdinal(d3.schemeCategory10);
+const simulation = d3.forceSimulation();
 const edgeAlign = -20;
 const nodeGroupMap = {
     'playlist': {'color': "#7f7f7f", "group": 1},
@@ -94,14 +95,6 @@ let links = g.append("g")
 let nodes = g.append("g")
     .selectAll("g")
 
-const simulation = d3.forceSimulation()
-    //.force("nodeLink", d3.forceLink().id(function(d) { return d.id; }).distance(.01).strength(.001)) // set link strength and distance
-    //.force("charge", d3.forceManyBody().strength(-500).distanceMax(20).distanceMin(10)) // spread nodes apart by modifying gravity aka attraction
-    //.force("x", d3.forceX(width/10)) // forces attraction towards specified point
-    //.force("center", d3.forceCenter((width*1.1)/2, height/2))
-    //.force("collision", d3.forceCollide().radius(.1)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
-
-
 d3.json(graphDataPath).then(function(g) {
 
     graph = g;
@@ -111,19 +104,36 @@ d3.json(graphDataPath).then(function(g) {
 
 function startGraph() {
 
+    graph.links.forEach((d) => {
+        linkedByIndex[`${d.source},${d.target}`] = 1;
+    });
+
     links = links
-        .attr("class", "link")
-        //.data(graph.links) // get json data
-        .data([]) // get json data
+        .data(graph.links) // get json data
+        //.data([]) // get json data
         .enter().append("line") // apply data and add line to DOM
+        .on('mouseover', linkFade(0.1))
+        .attr("class", "link")
         .attr("stroke", "#00b8ff")
         .attr("stroke-width", 2)
 
+
     nodes = nodes
         .attr("class", "node")
-        //.data(graph.nodes) // get json data
-        .data([]) // get json data
-        .enter().append("g"); // enter represents elements to be added, add them to the DOM
+        //.attr("opacity", 1)
+        .data(graph.nodes) // get json data
+        //.data([]) // get json data
+        .enter().append("g") // enter represents elements to be added, add them to the DOM
+       // .on('mouseover', function(d) {
+       //     d3.select(this).transition()
+       //         .duration('50')
+       //         .attr("opacity", .85)
+       // })
+        //.on('mouseout', function(d) {
+         //   d3.select(this).transition()
+        //        .duration('50')
+        //        .attr("opacity", 1)
+        //})
 
     nodes = nodes.call(d3.drag() // ability to drag elements
            .on("start", dragstarted)
@@ -132,13 +142,7 @@ function startGraph() {
 
     nodes.append("circle") // add node icons
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-        .attr("fill", function(d){
-            if (d.nodeType === 'track' && d.playlists.length > 1) {
-                return nodeGroupMap[d.nodeType]['mcolor']
-            } else {
-                return nodeGroupMap[d.nodeType]['color']
-            }
-        });
+        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']});
 
     drawText();
 
@@ -147,11 +151,11 @@ function startGraph() {
       //.force("charge", d3.forceManyBody())
       .force("center", d3.forceCenter(width / 2, height / 2))
 
-        .force("nodeLink", d3.forceLink().id(function(d) { return d.id; }).distance(.01).strength(.001)) // set link strength and distance
-    .force("charge", d3.forceManyBody().strength(-500).distanceMax(20).distanceMin(10)) // spread nodes apart by modifying gravity aka attraction
+        .force("nodeLink", d3.forceLink().id(d => d.id).strength(.1)) // set link strength and distance
+    .force("charge", d3.forceManyBody().strength(-500).distanceMax(100).distanceMin(50)) // spread nodes apart by modifying gravity aka attraction
        // .force("x", d3.forceX(width/10)) // forces attraction towards specified point
     //.force("center", d3.forceCenter((width*1.1)/2, height/2))
-    .force("collision", d3.forceCollide().radius(1)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
+    .force("collision", d3.forceCollide().radius(20)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
 
     simulation
         .nodes(graph.nodes)
@@ -161,7 +165,7 @@ function startGraph() {
       .force("nodeLink")
       .links(graph.links);
 
-    d3.timeout(function() { // synchronize animation with page load
+   d3.timeout(function() { // synchronize animation with page load
         // not sure exactly how this works, needs research
         for (let i = 0, n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())); i < n; ++i) {
             simulation.tick();
@@ -184,13 +188,13 @@ function startGraph() {
 
 function ticked() { // as simulation advances, .on tick called will display the results as computations process a 'tick'
     links
-        .attr("x1", function(d) { return d.source.x; })
-        .attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
 
     nodes
-        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"});
+        .attr("transform", (d) => { return "translate(" + d.x + "," + d.y + ")"});
 }
 
 function dragstarted(d) {
@@ -225,6 +229,14 @@ function drawText() {
         .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType]['group']}em`})
         .attr("x", +10)
         .text(function(d) { return d.id });
+}
+
+function linkFade(opacity) {
+    return d => {
+        console.log(d, 'hello')
+        return 0.1
+    }
+
 }
 
 function updateGraphWithPlaylists() {
@@ -275,7 +287,11 @@ function updateGraphWithPlaylists() {
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
         .attr("fill", function(d){
             if (d.nodeType === 'track' && d.playlists.length > 1) {
-                return nodeGroupMap[d.nodeType]['mcolor']
+                let playlists_found = 0;
+                new Set(d.playlists).forEach((p) => {
+                    if (selectedPlaylists.indexOf(p) > -1) playlists_found += 1
+                });
+                return (playlists_found > 1 ? nodeGroupMap[d.nodeType]['mcolor']: nodeGroupMap[d.nodeType]['color'])
             } else {
                 return nodeGroupMap[d.nodeType]['color']
             }
@@ -290,7 +306,8 @@ function updateGraphWithPlaylists() {
        .append("line")
        .merge(links)
        .attr("stroke", "#00b8ff")
-       .attr("stroke-width", 2);
+       .attr("stroke-width", 2)
+
 
     //simulation.nodes(nodes);
     simulation.force("nodeLink").links(links);
