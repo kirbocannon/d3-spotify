@@ -104,19 +104,15 @@ d3.json(graphDataPath).then(function(g) {
 
 function startGraph() {
 
-    graph.links.forEach((d) => {
-        linkedByIndex[`${d.source},${d.target}`] = 1;
-    });
-
     links = links
         .data(graph.links) // get json data
         //.data([]) // get json data
         .enter().append("line") // apply data and add line to DOM
-        .on('mouseover', linkFade(0.1))
+        //.on('mouseover.fade', linkFade(0))
+        //.on('mouseout.fade', linkFade(1))
         .attr("class", "link")
         .attr("stroke", "#00b8ff")
         .attr("stroke-width", 2)
-
 
     nodes = nodes
         .attr("class", "node")
@@ -124,6 +120,8 @@ function startGraph() {
         .data(graph.nodes) // get json data
         //.data([]) // get json data
         .enter().append("g") // enter represents elements to be added, add them to the DOM
+        .on('mouseover.fade', nodeFade(0))
+        .on('mouseout.fade', nodeFade(1))
        // .on('mouseover', function(d) {
        //     d3.select(this).transition()
        //         .duration('50')
@@ -184,6 +182,10 @@ function startGraph() {
     // disable double-click to zoom
     svg.on("dblclick.zoom", null);
 
+    graph.links.forEach((d) => {
+        linkedByIndex[`${d.source.index},${d.target.index}`] = 1;
+    });
+
 }
 
 function ticked() { // as simulation advances, .on tick called will display the results as computations process a 'tick'
@@ -231,12 +233,37 @@ function drawText() {
         .text(function(d) { return d.id });
 }
 
+function isConnected(a, b) {
+    return linkedByIndex[`${a.index},${b.index}`] || linkedByIndex[`${b.index},${a.index}`] || a.index === b.index;
+}
+
+//Fade rules for hovering over nodes
+function nodeFade(opacity) {
+    return d => {
+      nodes.style('stroke-opacity', function (o) {
+        const thisOpacity = isConnected(d, o) ? 1 : opacity;
+        this.setAttribute('fill-opacity', thisOpacity);
+        return thisOpacity;
+      });
+
+      links.style('stroke-opacity', o => (o.source === d || o.target === d ? 1 : opacity));
+
+    };
+}
+
 function linkFade(opacity) {
     return d => {
-        console.log(d, 'hello')
-        return 0.1
-    }
+      nodes.style('stroke-opacity', function (o) {
+          //console.log(d, o)
+        const thisOpacity = isConnected(d, o) ? 1 : opacity;
+        console.log(thisOpacity)
+        this.setAttribute('fill-opacity', thisOpacity);
+        return thisOpacity;
+      });
 
+    links.style('stroke-opacity', o => (o.source === d.source && o.target === d.target ? 1 : opacity));
+
+    }
 }
 
 function updateGraphWithPlaylists() {

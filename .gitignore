@@ -9,3 +9,4 @@ archive/
 lab_files/
 credentials.yaml
 app/static/data/*
+test.py
