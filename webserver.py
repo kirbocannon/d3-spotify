@@ -20,7 +20,7 @@ def home():
 
 
 @app.route('/<path:path>')
-def send_static_data_files(path):
+def send_data_files(path):
     return send_from_directory('data', path)
 
 
