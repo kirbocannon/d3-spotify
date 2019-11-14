@@ -93,9 +93,6 @@ const nodeGroupMap = {
     'playlist': {'color': "#7f7f7f", "group": 1},
     'track': {'color': "#ff7f0e", "mcolor": "#2cff1c", "group": 5}
 };
-//add encompassing group for the zoom
-//const g = svg.append("g")
-//    .attr("class", "everything");
 
 let links = g.append("g")
     .selectAll("line");
@@ -172,7 +169,7 @@ function startGraph() {
         .data([])
         .enter()
         .append("text")
-        .text(d=> d.id)
+        .text(d => d.id)
         .attr("id", function(d){return "label-" + d.id})
         .attr("font-weight", "Bold")
         .style('fill', '#000000')
@@ -268,11 +265,10 @@ function linkFade(opacity) {
 
 function updateGraphWithPlaylists() {
     let selectedPlaylists = $('#playlistSelect').val();
-    console.log(selectedPlaylists)
     //let selectedPlaylists = ['Scores', "Trance"];
-    let nodesToKeep = [];
-    let linksToKeep = [];
-    graph.nodes.forEach(function(entry) {
+    const nodesToKeep = [];
+    const linksToKeep = [];
+    graph.nodes.forEach(function(entry, i) {
         // if select playlists equal node id
         if (entry.nodeType === 'playlist' && selectedPlaylists.indexOf(entry.id) > -1) {
             nodesToKeep.push(entry);
@@ -292,16 +288,21 @@ function updateGraphWithPlaylists() {
         if (selectedPlaylists.indexOf(entry.target.id) > -1) {
             linksToKeep.push(entry)
         }
-    })
+    });
 
-    console.log(nodesToKeep, 'nodes')
-    console.log(linksToKeep, 'links')
-
+    // remove previous nodes
     nodes = nodes.data(nodesToKeep, function(d){return d.id});
+    nodeLabels = nodeLabels.data(nodesToKeep, function(d){return d.id});
+    links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
+
     nodes.exit().remove();
+    nodeLabels.exit().remove();
+    links.exit().remove();
 
     nodes = nodes
-        .enter().append("g")
+        .enter()
+        .append("circle") // enter represents elements to be added, add them to the DOM
+        .attr("class", "node")
         .on('mouseover.fade', nodeFade(.3))
         .on('mouseout.fade', nodeFade(1))
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
@@ -328,24 +329,20 @@ function updateGraphWithPlaylists() {
 
     nodeLabels = nodeLabels
         .attr("class", "text")
-        .data(graph.nodes)
+        .data(nodesToKeep)
         .enter()
         .append("text")
-        .text(d=> d.id)
-        .attr("id", function(d){return "label-" + d.id})
+        .text(d => d.id)
+        .attr("id", d => {return "label-" + d.id})
         .attr("font-weight", "Bold")
         .style('fill', '#000000')
        // .style("font-family", "Arial")
         .style("font-size", 12)
-        .attr("dx", -30)
+        .attr("dx", -20)
         .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType].group}em`})
-        //.attr("x", +10)
         .on('mouseover.fade', nodeFade(.3))
         .on('mouseout.fade', nodeFade(1))
-
-   links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
-
-   links.exit().remove();
+        .merge(nodes);
 
    links = links
        .enter()
@@ -356,8 +353,6 @@ function updateGraphWithPlaylists() {
        .attr("stroke", "#00b8ff")
        .attr("stroke-width", 2)
 
-    //simulation.nodes(nodes);
-    //simulation.force("nodeLink").links(links);
     simulation.alpha(.1).restart();
 }
 
