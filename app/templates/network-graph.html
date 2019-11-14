@@ -130,9 +130,9 @@ function startGraph() {
         //.force("center", d3.forceCenter(width / 2, height / 2))
         //.force("nodeLink", d3.forceLink().id(d => d.id).strength(.1)) // set link strength and distance
         //.force("charge", d3.forceManyBody().strength(-500).distanceMax(100).distanceMin(50)) // spread nodes apart by modifying gravity aka attraction
-        .force("collision", d3.forceCollide().radius(5)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
+        .force("collision", d3.forceCollide().radius(6)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
       .force("nodeLink", d3.forceLink(graph.links).id(d => d.id))
-      .force("charge", d3.forceManyBody().strength(-500))
+      .force("charge", d3.forceManyBody().strength(-100))
       .force("x", d3.forceX())
       .force("y", d3.forceY());
 
@@ -172,15 +172,14 @@ function startGraph() {
         .append("text")
         .text(d => d.id)
         .attr("id", function(d){return "label-" + d.id})
-        .attr("font-weight", "Bold")
+        .attr("font-weight", (d => d.nodeType === 'playlist' ? "bold" : "normal"))
         .style('fill', '#000000')
        // .style("font-family", "Arial")
         .style("font-size", 12)
         //.attr("x", 8)
         //.attr("y", ".31em")
-        .attr("dx", -30)
-        .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType].group}em`})
-        //.attr("x", +10)
+        //.attr("dx", -30)
+        //.attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType].group}em`})
         .on('mouseover.fade', nodeFade(.3))
         .on('mouseout.fade', nodeFade(1))
 
@@ -296,11 +295,12 @@ function updateGraphWithPlaylists() {
         }
     });
 
-    // remove previous nodes
+    // add selected nodes
     nodes = nodes.data(nodesToKeep, function(d){return d.id});
     nodeLabels = nodeLabels.data(nodesToKeep, function(d){return d.id});
     links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
 
+    // remove unselected nodes
     nodes.exit().remove();
     nodeLabels.exit().remove();
     links.exit().remove();
@@ -312,8 +312,6 @@ function updateGraphWithPlaylists() {
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
         .on('mouseover.fade', nodeFade(.3))
         .on('mouseout.fade', nodeFade(1))
-        //.attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-        //.attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -328,7 +326,6 @@ function updateGraphWithPlaylists() {
             new Set(d.playlists).forEach((p) => {
                 if (selectedPlaylists.indexOf(p) > -1) playlists_found += 1
             });
-            console.log(playlists_found > 1 ? nodeGroupMap[d.nodeType]['mcolor']: nodeGroupMap[d.nodeType]['color'])
             return (playlists_found > 1 ? nodeGroupMap[d.nodeType]['mcolor']: nodeGroupMap[d.nodeType]['color'])
         } else {
             return nodeGroupMap[d.nodeType]['color']
@@ -342,11 +339,12 @@ function updateGraphWithPlaylists() {
         .append("text")
         .text(d => d.id)
         .attr("id", d => {return "label-" + d.id})
-        .attr("font-weight", "Bold")
+        //.attr("font-weight", "Bold")
+        .attr("font-weight", (d => d.nodeType === 'playlist' ? "bold" : "normal"))
         .style('fill', '#000000')
        // .style("font-family", "Arial")
-        .style("font-size", 12)
-        .attr("dx", -20)
+        .style("font-size", (d => d.nodeType === 'playlist' ? 12 : 9))
+        .attr("dx", 10)
         .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType].group}em`})
         .on('mouseover.fade', nodeFade(.3))
         .on('mouseout.fade', nodeFade(1))
@@ -355,7 +353,7 @@ function updateGraphWithPlaylists() {
    links = links
        .enter()
        .append("line")
-       //.on('mouseover.fade', linkFade(.3))
+       //.on('mouseover.fade', linkFade(.3)) // this doesn't highlight the node that's connected yet
        //.on('mouseout.fade', linkFade(1))
        .merge(links)
        .attr("stroke", "#00b8ff")
