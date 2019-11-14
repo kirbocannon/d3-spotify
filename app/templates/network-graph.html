@@ -126,7 +126,7 @@ d3.json(graphDataPath).then(function(g) {
 function startGraph() {
 
     simulation = d3.forceSimulation(graph.nodes)
-        //.force("center", d3.forceCenter(width / 2, height / 2))
+        .force("center", d3.forceCenter(width / 2, height / 2))
         //.force("nodeLink", d3.forceLink().id(d => d.id).strength(.1)) // set link strength and distance
         //.force("charge", d3.forceManyBody().strength(-500).distanceMax(100).distanceMin(50)) // spread nodes apart by modifying gravity aka attraction
         .force("collision", d3.forceCollide().radius(10)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
@@ -188,6 +188,7 @@ function startGraph() {
 
     zoom_handler(svg);
 
+    // keep track of who is connected to who
     graph.links.forEach((d) => {
         linkedByIndex[`${d.source.index},${d.target.index}`] = 1;
     });
@@ -303,17 +304,6 @@ function updateGraphWithPlaylists() {
         .enter()
         .append("circle") // enter represents elements to be added, add them to the DOM
         .attr("class", "node")
-        .on('mouseover.fade', nodeFade(.3))
-        .on('mouseout.fade', nodeFade(1))
-        .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
-        .call(d3.drag()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended))
-        .merge(nodes);
-
-    nodes.append("circle") // add node icons
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
         .attr("fill", function(d){
             if (d.nodeType === 'track' && d.playlists.length > 1) {
@@ -325,7 +315,16 @@ function updateGraphWithPlaylists() {
             } else {
                 return nodeGroupMap[d.nodeType]['color']
             }
-        });
+        })
+        .on('mouseover.fade', nodeFade(.3))
+        .on('mouseout.fade', nodeFade(1))
+        .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
+        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended))
+        .merge(nodes);
 
     nodeLabels = nodeLabels
         .attr("class", "text")
@@ -342,7 +341,7 @@ function updateGraphWithPlaylists() {
         .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType].group}em`})
         .on('mouseover.fade', nodeFade(.3))
         .on('mouseout.fade', nodeFade(1))
-        .merge(nodes);
+        .merge(nodeLabels);
 
    links = links
        .enter()
