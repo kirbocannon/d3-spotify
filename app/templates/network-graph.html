@@ -194,11 +194,6 @@ function startGraph() {
 
     zoom_handler(svg);
 
-    // keep track of who is connected to who
-    graph.links.forEach((d) => {
-        linkedByIndex[`${d.source.index},${d.target.index}`] = 1;
-    });
-
 }
 
 function updateGraphWithPlaylists() {
@@ -224,14 +219,17 @@ function updateGraphWithPlaylists() {
         }
     });
 
+    // keep track of who is connected to who
+    linksToKeep.forEach((d) => {
+        linkedByIndex[`${d.source.index},${d.target.index}`] = 1;
+    });
+
     graph.links.forEach(function(entry) {
         // if entry's target is found in playlists selected
         if (selectedPlaylists.indexOf(entry.target.id) > -1) {
             linksToKeep.push(entry)
         }
     });
-
-    console.log(nodesToKeep)
 
     // add selected nodes
     nodes = nodes.data(nodesToKeep, d => {return d.id});
@@ -347,18 +345,6 @@ function zoom_actions(){
     g.attr("transform", d3.event.transform)
 }
 
-// this is the code that resizes the chart
-// it will be called on load
-// and in response to window resizes
-// gets the width of the container
-// and resizes the svg to fill it
-// while maintaining a consistent aspect ratio
-function resize() {
-  const w = parseInt(svgContainer.style('width'));
-  svg.attr('width', w);
-  svg.attr('height', Math.round(w / aspect));
-}
-
 function isConnected(a, b) {
     return linkedByIndex[`${a.index},${b.index}`] || linkedByIndex[`${b.index},${a.index}`] || a.index === b.index;
 }
@@ -373,10 +359,12 @@ function nodeFade(opacity) {
       });
 
       links.style('stroke-opacity', o => (o.source === d || o.target === d ? 1 : opacity));
+      nodeLabels.style('opacity', o => (o.id !== d.id ) ? opacity : 1 )
 
     };
 }
 
+/*
 function linkFade(opacity) {
     return d => {
       nodes.style('stroke-opacity', function (o) {
@@ -389,6 +377,7 @@ function linkFade(opacity) {
 
     }
 }
+*/
 
 $(document).ready(function() {
     const $playlistSelect = $('#playlistSelect').select2({
