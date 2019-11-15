@@ -59,7 +59,7 @@
   <div class="row">
     <div class="col-xl-12">
     <div class="container center" id="svgContainer">
-        <div class="container" id="loadingCircleContainer"></div>
+        <!--<div class="container" id="loadingCircleContainer"></div>-->
         <svg id="svgWindow" class="center" width="960" height="800" ></svg>
     </div>
     </div>
@@ -81,55 +81,49 @@
 
 <script>
 
-let graph = {};
 const graphDataPath = "/data/output.json";
-const nodeImageSize = 45;
-const linkedByIndex = {};
-const width = 960;
-const height = 600;
-const radius = 6;
-const svg = d3.select("svg")
-    //.attr("viewBox", [-width / 2, -height / 2, width, height]);
-    .attr("viewbox", [width, height])
-//add encompassing group for the zoom
-const g = svg.append("g")
-    .attr("class", "everything");
-//add zoom capabilities
-const zoom_handler = d3.zoom()
-    .on("zoom", zoom_actions);
-const edgeAlign = -20;
-const nodeGroupMap = {
+
+const width = 960,
+    height = 800,
+    radius = 6,
+    linkedByIndex = {},
+    nodeGroupMap = {
     'playlist': {'color': "#7f7f7f", "group": 1},
     'track': {'color': "#ff7f0e", "mcolor": "#2cff1c", "group": 5}
 };
 
-let links = g.append("g")
-    .selectAll("line");
+const svg = d3.select("svg").attr("viewbox", `0 0 ${width} ${height}`),
+    zoom_handler = d3.zoom().on("zoom", zoom_actions);
 
-let nodes = g.append("g")
-    .selectAll("circle");
+const svgContainer = d3.select(svg.node().parentNode),
+    g = svg.append("g").attr("class", "everything");
 
-let nodeLabels = g.append("g")
-    .selectAll("text");
-
+let links = g.append("g").selectAll("line");
+let nodes = g.append("g").selectAll("circle");
+let nodeLabels = g.append("g").selectAll("text");
 let simulation = Object;
 let labelLayout = Object;
+let graph = {};
 
 d3.json(graphDataPath).then(function(g) {
 
     graph = g;
     startGraph();
+    //updateGraphWithPlaylists()
 
 });
 
 function startGraph() {
 
-    simulation = d3.forceSimulation(graph.nodes)
-        .force("collision", d3.forceCollide().radius(radius)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
-        .force("nodeLink", d3.forceLink(graph.links).id(d => d.id))
-        .force("charge", d3.forceManyBody().strength(-100))
-        //.force("x", d3.forceX())
-        //.force("y", d3.forceY());
+    simulation = d3.forceSimulation()
+        .force("collision", d3.forceCollide().radius(radius).strength(.1)) // treat nodes as circles with radius rather than points, prevent overlapping of nodes
+        .force("nodeLink", d3.forceLink().id(d => d.id))
+        .force("charge", d3.forceManyBody().strength(-45))
+        .force("x", d3.forceX().strength(.1).x(width * .5))
+        .force("center", d3.forceCenter((width*0.7)/2, height/2))
+        .force("y", d3.forceY().strength(.1).y(height * .5));
+        //.velocityDecay(0.4)
+        //.alphaTarget(0.1);
 
     links = links
         //.data(graph.links) // get json data
@@ -149,9 +143,22 @@ function startGraph() {
         .append("circle") // enter represents elements to be added, add them to the DOM
         .attr("class", "node")
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
-        .attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
-        .on('mouseover.fade', nodeFade(.3))
+        //.attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
+        .on('mouseover.fade', nodeFade(.1))
         .on('mouseout.fade', nodeFade(1))
+
+    // need this separate to apply after all nodes are in the DOM
+    nodes
+        //.attr("fill", d => {return d.playlists.length || 0 > 1 ? nodeGroupMap[d.nodeType]['mcolor']: nodeGroupMap[d.nodeType]['color']})
+        .attr("fill", d => {
+            if (d.nodeType === 'track') {
+                return d.playlists.length > 1 ? nodeGroupMap[d.nodeType]['mcolor']: nodeGroupMap[d.nodeType]['color']
+            }
+            else {
+                return nodeGroupMap[d.nodeType]['color']
+            }
+
+        });
 
     nodes = nodes.call(d3.drag() // ability to drag elements
            .on("start", dragstarted)
@@ -169,8 +176,8 @@ function startGraph() {
         .attr("id", function(d){return "label-" + d.id})
         .attr("font-weight", (d => d.nodeType === 'playlist' ? "bold" : "normal"))
         .style('fill', '#000000')
-       // .style("font-family", "Arial")
-        .style("font-size", 12)
+        .style("font-family", "Arial")
+        .style("font-size", (d => d.nodeType === 'track' ? 2 : 14))
         //.attr("x", 8)
         //.attr("y", ".31em")
         //.attr("dx", -30)
@@ -179,7 +186,11 @@ function startGraph() {
         .on('mouseout.fade', nodeFade(1))
 
     simulation
+        .nodes(graph.nodes)
         .on("tick", ticked);
+
+    simulation.force("nodeLink")
+        .links(graph.links);
 
     zoom_handler(svg);
 
@@ -190,83 +201,13 @@ function startGraph() {
 
 }
 
-function ticked() { // as simulation advances, .on tick called will display the results as computations process a 'tick'
-    links
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-
-    nodes
-        //.attr("cx", d => d.x)
-        //.attr("cy", d => d.y)
-        // commenting out for now but these would restrain nodes within viewbox
-        .attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
-        .attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
-
-    nodeLabels
-        .attr("x", d => d.x - 5) //position of the lower left point of the text
-        .attr("y", d => d.y + 5); //position of the lower left point of the text
-}
-
-function dragstarted(d) {
-   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-   d.fx = d.x;
-   d.fy = d.y;
- }
-
-function dragged(d) {
-   d.fx = d3.event.x;
-   d.fy = d3.event.y;
- }
-
-function dragended(d) {
-   if (!d3.event.active) simulation.alphaTarget(0);
-   d.fx = null;
-   d.fy = null;
- }
-
-//Zoom functions
-function zoom_actions(){
-    g.attr("transform", d3.event.transform)
-}
-
-function isConnected(a, b) {
-    return linkedByIndex[`${a.index},${b.index}`] || linkedByIndex[`${b.index},${a.index}`] || a.index === b.index;
-}
-
-//Fade rules for hovering over nodes
-function nodeFade(opacity) {
-    return d => {
-      nodes.style('stroke-opacity', function (o) {
-        const thisOpacity = isConnected(d, o) ? 1 : opacity;
-        this.setAttribute('fill-opacity', thisOpacity);
-        return thisOpacity;
-      });
-
-      links.style('stroke-opacity', o => (o.source === d || o.target === d ? 1 : opacity));
-
-    };
-}
-
-function linkFade(opacity) {
-    return d => {
-      nodes.style('stroke-opacity', function (o) {
-        const thisOpacity = isConnected(d, o) ? 1 : opacity;
-        this.setAttribute('fill-opacity', thisOpacity);
-        return thisOpacity;
-      });
-
-    links.style('stroke-opacity', o => (o.source === d.source && o.target === d.target ? 1 : opacity));
-
-    }
-}
-
 function updateGraphWithPlaylists() {
     let selectedPlaylists = $('#playlistSelect').val();
     //let selectedPlaylists = ['Scores', "Trance"];
+    //let selectedPlaylists = ['Dance']
     const nodesToKeep = [];
     const linksToKeep = [];
+
     graph.nodes.forEach(function(entry, i) {
         // if select playlists equal node id
         if (entry.nodeType === 'playlist' && selectedPlaylists.indexOf(entry.id) > -1) {
@@ -290,10 +231,12 @@ function updateGraphWithPlaylists() {
         }
     });
 
+    console.log(nodesToKeep)
+
     // add selected nodes
-    nodes = nodes.data(nodesToKeep, function(d){return d.id});
-    nodeLabels = nodeLabels.data(nodesToKeep, function(d){return d.id});
-    links = links.data(linksToKeep, function(d) { return d.source.id + "-" + d.target.id; });
+    nodes = nodes.data(nodesToKeep, d => {return d.id});
+    nodeLabels = nodeLabels.data(nodesToKeep, d => {return d.id});
+    links = links.data(linksToKeep, d => { return d.source.id + "-" + d.target.id; });
 
     // remove unselected nodes
     nodes.exit().remove();
@@ -337,7 +280,7 @@ function updateGraphWithPlaylists() {
         .attr("font-weight", (d => d.nodeType === 'playlist' ? "bold" : "normal"))
         .style('fill', '#000000')
         .style("font-family", "Arial")
-        .style("font-size", (d => d.nodeType === 'playlist' ? 12 : 9))
+        .style("font-size", (d => d.nodeType === 'track' ? 7 : 12))
         .attr("dx", 10)
         .attr("dy", function(d){return `${4.8 / nodeGroupMap[d.nodeType].group}em`})
         .on('mouseover.fade', nodeFade(.3))
@@ -353,7 +296,98 @@ function updateGraphWithPlaylists() {
        .attr("stroke", "#00b8ff")
        .attr("stroke-width", 2)
 
+    simulation
+        .nodes(nodesToKeep)
+        .on("tick", ticked);
+
+    simulation.force("nodeLink")
+        .links(linksToKeep);
+
     simulation.alpha(.1).restart();
+}
+
+function ticked() { // as simulation advances, .on tick called will display the results as computations process a 'tick'
+    links
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+    nodes
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y)
+        // commenting out for now but these would restrain nodes within viewbox
+        //.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
+        //.attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
+
+    nodeLabels
+        .attr("x", d => d.x - 15) //position of the lower left point of the text
+        .attr("y", d => d.y + 15); //position of the lower left point of the text
+}
+
+function dragstarted(d) {
+   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+   d.fx = d.x;
+   d.fy = d.y;
+ }
+
+function dragged(d) {
+   d.fx = d3.event.x;
+   d.fy = d3.event.y;
+ }
+
+function dragended(d) {
+   if (!d3.event.active) simulation.alphaTarget(0);
+   d.fx = null;
+   d.fy = null;
+ }
+
+//Zoom functions
+function zoom_actions(){
+    g.attr("transform", d3.event.transform)
+}
+
+// this is the code that resizes the chart
+// it will be called on load
+// and in response to window resizes
+// gets the width of the container
+// and resizes the svg to fill it
+// while maintaining a consistent aspect ratio
+function resize() {
+  const w = parseInt(svgContainer.style('width'));
+  svg.attr('width', w);
+  svg.attr('height', Math.round(w / aspect));
+}
+
+function isConnected(a, b) {
+    return linkedByIndex[`${a.index},${b.index}`] || linkedByIndex[`${b.index},${a.index}`] || a.index === b.index;
+}
+
+//Fade rules for hovering over nodes
+function nodeFade(opacity) {
+    return d => {
+      nodes.style('stroke-opacity', function (o) {
+        const thisOpacity = isConnected(d, o) ? 1 : opacity;
+        this.setAttribute('fill-opacity', thisOpacity);
+        return thisOpacity;
+      });
+
+      links.style('stroke-opacity', o => (o.source === d || o.target === d ? 1 : opacity));
+
+    };
+}
+
+function linkFade(opacity) {
+    return d => {
+      nodes.style('stroke-opacity', function (o) {
+        const thisOpacity = isConnected(d, o) ? 1 : opacity;
+        this.setAttribute('fill-opacity', thisOpacity);
+        return thisOpacity;
+      });
+
+    links.style('stroke-opacity', o => (o.source === d.source && o.target === d.target ? 1 : opacity));
+
+    }
 }
 
 $(document).ready(function() {
