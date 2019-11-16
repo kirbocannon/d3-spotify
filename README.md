@@ -12,5 +12,15 @@
 ### Install requirements
 `KirboCannon >> pip install -r requirements.txt`
 
+### Create `credentials.yaml` file in the same directory as the spotify_script.py file
+You must create your tokens using the Spotify developer site. Once you have this information, 
+create the yaml file containing the credentials. 
+
+```.env
+username: {spotify_username}
+client_id: {spotify_client_id}
+client_secret: {spotify_client_secret}
+```
+
 ### Run script and generate file
 `KirboCannon >> python spotify_script /location/to/all/the/things`
