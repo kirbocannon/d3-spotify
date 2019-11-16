@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "429482a6-522f-4dc3-9f61-0240c53b1385",
 		"name": "Spotify Data Visuzliation Demo",
-		"description": "This collection is a Postman adaptation of [Robert Valmassoi](https://codepen.io/valmassoi)'s excellent Codepen, [\"Visualize Data with a Heat Map using D3 JS\"](https://codepen.io/valmassoi/pen/aNGryB). It shows how you can use Postman's Visualizer feature to render a heatmap chart from your API response data using D3.",
+		"description": "D3 force-directed graph to view Spotify data.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -412,8 +412,7 @@
 					"host": [
 						"{{spotifyDataUrl}}"
 					]
-				},
-				"description": "Visualization source: [codepen.io/valmassoi/pen/aNGryB](https://codepen.io/valmassoi/pen/aNGryB)"
+				}
 			},
 			"response": []
 		}
@@ -442,7 +441,7 @@
 	],
 	"variable": [
 		{
-			"id": "5d70c682-96d3-43e8-a7bb-44185c120a1b",
+			"id": "64b1d5c5-a233-4cd9-bb00-cda658a2020c",
 			"key": "spotifyDataUrl",
 			"value": "https://gist.githubusercontent.com/kirbocannon/95343e0391a5be580d0fd611f34ca578/raw/50bb903ca1d2bf2ce22e7a36aeede2c2c3299448/spotifyData.json",
 			"type": "string"
