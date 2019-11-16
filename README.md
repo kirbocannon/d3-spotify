@@ -27,4 +27,5 @@ client_secret: {spotify_client_secret}
 ### 5.) Run script and generate file
 `(venv) KirboCannon >> python spotify_script /location/to/all/the/things`
 
-### 6.) Now you can import the postman collection `visualization.postman_collection.json` and edit the collection variable to the URL of your data.
+### 6.) Now you can import the postman collection and edit the collection variable to the URL of your data.
+Postman collection name: `visualization.postman_collection.json`
