@@ -2,6 +2,7 @@
 
 ### Clone this repo
 `KirboCannon >> git clone https://github.com/kirbocannon/d3-spotify` 
+ 
 `KirboCannon >> cd d3-spotify`
 
 ### Setup virtual environment (optional)
