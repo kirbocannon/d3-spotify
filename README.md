@@ -6,8 +6,10 @@
 `KirboCannon >> cd d3-spotify`
 
 ### 2.) Setup virtual environment (optional)
-`KirboCannon >> virtualenv -p python3 venv`
-`KirboCannon >> ource venv/bin/activate`
+```
+KirboCannon >> virtualenv -p python3 venv
+KirboCannon >> source venv/bin/activate
+```
 
 ### 3.) Install requirements
 `(venv) KirboCannon >> pip install -r requirements.txt`
