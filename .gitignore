@@ -8,5 +8,4 @@ archive/
 *.log
 lab_files/
 credentials.yaml
-app/static/data/*
 test.py

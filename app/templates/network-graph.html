@@ -81,7 +81,7 @@
 
 <script>
 
-const graphDataPath = "/data/output.json";
+const graphDataPath = "/data/spotifyData.json";
 
 const width = 960,
     height = 800,
@@ -144,7 +144,7 @@ function startGraph() {
         .attr("class", "node")
         .attr("r", function(d){return 30 / nodeGroupMap[d.nodeType]['group']})
         //.attr("fill", function(d){return nodeGroupMap[d.nodeType]['color']})
-        .on('mouseover.fade', nodeFade(.1))
+        .on('mouseover.fade', nodeFade(.3))
         .on('mouseout.fade', nodeFade(1))
 
     // need this separate to apply after all nodes are in the DOM

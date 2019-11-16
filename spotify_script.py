@@ -30,7 +30,7 @@ def create_json_file(data):
             'app',
             'static',
             'data',
-            'output.json'), 'w+') as f:
+            'spotifyData.json'), 'w+') as f:
         f.write(json.dumps(data, indent=4))
 
     return True
