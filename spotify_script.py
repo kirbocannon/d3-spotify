@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 import os
+import sys
 import yaml
 import json
 import spotipy
@@ -25,18 +25,18 @@ def get_tracks_from_playlist(track_results):
     return list(tracks)
 
 
-def create_json_file(data):
-    with open(os.path.join(
-            'app',
-            'static',
-            'data',
-            'spotifyData.json'), 'w+') as f:
+def create_json_file(data, data_filepath):
+    with open(data_filepath, 'w+') as f:
         f.write(json.dumps(data, indent=4))
 
     return True
 
 
 def main():
+    try:
+        data_filepath = sys.argv[1]
+    except IndexError:
+        sys.exit('Error: Please enter a destination filename with path. Example: data/spotifyData.json')
     config = read_yaml_file('credentials.yaml')
     USERNAME = config['username']
     client_credentials_manager = SpotifyClientCredentials(
@@ -77,7 +77,7 @@ def main():
                 if link['source'] == node['id']:
                     node['playlists'].append(link['target'])
 
-    _ = create_json_file(graph)
+    _ = create_json_file(graph, data_filepath)
 
 
 if __name__ == '__main__':
