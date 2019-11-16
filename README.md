@@ -10,7 +10,7 @@
 `KirboCannon >> ource venv/bin/activate`
 
 ### 3.) Install requirements
-`KirboCannon >> pip install -r requirements.txt`
+`(venv) KirboCannon >> pip install -r requirements.txt`
 
 ### 4.) Create `credentials.yaml` file in the same directory as the spotify_script.py file
 You must create your tokens using the Spotify developer site. Once you have this information, 
@@ -23,5 +23,5 @@ client_secret: {spotify_client_secret}
 ```
 
 ### 5.) Run script and generate file
-`KirboCannon >> python spotify_script /location/to/all/the/things`
+`(venv) KirboCannon >> python spotify_script /location/to/all/the/things`
 
